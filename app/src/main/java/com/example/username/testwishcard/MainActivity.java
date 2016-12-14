@@ -31,14 +31,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String TEXT_MSG_KEY = "TEXT_MSG";
     private static final String TEXT_SIZE_KEY = "TEXT_SIZE";
     private static final String TEXT_SIZE_PROGRESS_KEY = "TEXT_SIZE_PROGRESS";
-    private static final String TEXT_ROTATION_PROGRESS_KEY = "TEXT_ROTATION_PROGRESS";
-    private static final String TEXT_COLOR_KEY = "TEXT_COLOR";
     private static final String TEXT_ROTATION_KEY = "TEXT_ROTATION";
+    private static final String TEXT_ROTATION_PROGRESS_KEY = "TEXT_ROTATION_PROGRESS";
     private static final String CARD_COLOR_KEY = "CARD_COLOR";
+    private static final String TEXT_COLOR_KEY = "TEXT_COLOR";
 
     // Begin by 0 index because "boolean[] optionsEnabled" relies on it (or use a Map?)
     private static final int TEXT_OPTIONS = 0;
     private static final int CARD_COLOR_OPTIONS = 1;
+    private static final int TEXT_COLOR_OPTIONS = 2;
 
     private static final int DEFAULT_TEXT_SIZE = 16;
     private static final int DEFAULT_TEXT_SIZE_PROGRESS = 25;
@@ -103,6 +104,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        ImageButton textColorOptionsBtn = (ImageButton) findViewById(R.id.option_text_color_btn);
+        textColorOptionsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!optionsEnabled[TEXT_COLOR_OPTIONS]) {
+                    enableOption(TEXT_COLOR_OPTIONS);
+                } else {
+                    disableOption(TEXT_COLOR_OPTIONS);
+                }
+            }
+        });
     }
 
     @Override
@@ -119,9 +132,12 @@ public class MainActivity extends AppCompatActivity {
         textSizeProgress = sharedPref.getInt(TEXT_SIZE_PROGRESS_KEY, DEFAULT_TEXT_SIZE_PROGRESS);
         textRotationProgress = sharedPref.getInt(TEXT_ROTATION_PROGRESS_KEY,
                 DEFAULT_TEXT_ROTATION_PROGRESS);
-        int color = sharedPref.getInt(CARD_COLOR_KEY,
+        int cardColor = sharedPref.getInt(CARD_COLOR_KEY,
                 ContextCompat.getColor(this, android.R.color.white));
-        cardView.setBackgroundColor(color);
+        cardView.setBackgroundColor(cardColor);
+        int textColor = sharedPref.getInt(TEXT_COLOR_KEY,
+                ContextCompat.getColor(this, android.R.color.black));
+        textView.setTextColor(textColor);
 
         Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize());
         Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
@@ -133,10 +149,12 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         disableAllOptions();
-        int color = Color.TRANSPARENT;
+        int cardColor = Color.TRANSPARENT;
         Drawable background = cardView.getBackground();
         if (background instanceof ColorDrawable)
-            color = ((ColorDrawable) background).getColor();
+            cardColor = ((ColorDrawable) background).getColor();
+
+        int textColor = textView.getTextColors().getDefaultColor();
 
         Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize() / 2);
         Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
@@ -147,7 +165,8 @@ public class MainActivity extends AppCompatActivity {
         editor.putInt(TEXT_SIZE_PROGRESS_KEY, textSizeProgress);
         editor.putFloat(TEXT_ROTATION_KEY, textView.getRotation());
         editor.putInt(TEXT_ROTATION_PROGRESS_KEY, textRotationProgress);
-        editor.putInt(CARD_COLOR_KEY, color);
+        editor.putInt(CARD_COLOR_KEY, cardColor);
+        editor.putInt(TEXT_COLOR_KEY, textColor);
         editor.commit();
     }
 //
@@ -190,6 +209,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(LOG_TAG, "enable CARD_COLOR_OPTIONS: " + CARD_COLOR_OPTIONS);
                 enableCardColorOptions();
                 break;
+            case TEXT_COLOR_OPTIONS:
+                Log.d(LOG_TAG, "enable TEXT_COLOR_OPTIONS: " + TEXT_COLOR_OPTIONS);
+                enableTextColorOptions();
+                break;
             default:
                 break;
         }
@@ -206,6 +229,10 @@ public class MainActivity extends AppCompatActivity {
             case CARD_COLOR_OPTIONS:
                 Log.d(LOG_TAG, "disable CARD_COLOR_OPTIONS: " + CARD_COLOR_OPTIONS);
                 mainViewGroup.removeView(findViewById(R.id.card_color_options));
+                break;
+            case TEXT_COLOR_OPTIONS:
+                Log.d(LOG_TAG, "disable TEXT_COLOR_OPTIONS: " + TEXT_COLOR_OPTIONS);
+                mainViewGroup.removeView(findViewById(R.id.text_color_options));
                 break;
             default:
                 break;
@@ -270,7 +297,6 @@ public class MainActivity extends AppCompatActivity {
     private void enableCardColorOptions() {
         Log.d(LOG_TAG, "enableCardColorOptions()");
         mainViewGroup = (ViewGroup) View.inflate(this, R.layout.card_color_options, mainViewGroup);
-        Log.d(LOG_TAG, mainViewGroup.toString());
 
         final ArrayList<Integer> colorGrid = new ArrayList<>();
         colorGrid.add(R.color.c1);
@@ -299,7 +325,43 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        gridView.setAdapter(new ArrayAdapter<Integer>(this, R.layout.grid_elem, colorGrid) {
+        gridView.setAdapter(new ArrayAdapter<Integer>(this, R.layout.card_color_grid_elem, colorGrid) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                ((TextView) view).setText("");
+                view.setBackgroundColor(ContextCompat.getColor(getContext(),
+                        colorGrid.get(position)));
+                return view;
+            }
+        });
+    }
+
+    private void enableTextColorOptions() {
+        Log.d(LOG_TAG, "enableTextColorOptions()");
+        mainViewGroup = (ViewGroup) View.inflate(this, R.layout.text_color_options, mainViewGroup);
+
+        final ArrayList<Integer> colorGrid = new ArrayList<>();
+        colorGrid.add(R.color.c1);
+        colorGrid.add(android.R.color.black);
+        colorGrid.add(R.color.c3);
+        colorGrid.add(R.color.c4);
+        colorGrid.add(android.R.color.white);
+        colorGrid.add(R.color.c6);
+        colorGrid.add(R.color.c7);
+        colorGrid.add(R.color.c8);
+
+        final GridView gridView = (GridView) findViewById(R.id.text_color_options);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                textView.setTextColor(ContextCompat.getColor(getApplicationContext(),
+                        colorGrid.get(i)));
+            }
+        });
+
+        gridView.setAdapter(new ArrayAdapter<Integer>(this,
+                R.layout.text_color_grid_elem,colorGrid) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);

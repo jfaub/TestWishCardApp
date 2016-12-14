@@ -9,18 +9,19 @@
 
     <LinearLayout
         android:id="@+id/card"
-        android:layout_width="232dp"
-        android:layout_height="313dp"
+        android:layout_width="216dp"
+        android:layout_height="297dp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="24dp"
         android:background="@android:color/white"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="8dp">
 
         <ImageView
             android:layout_width="200dp"
             android:layout_height="200dp"
             android:scaleType="centerCrop"
+            android:layout_gravity="center_horizontal"
             android:src="@drawable/cascade" />
 
         <EditText
@@ -53,6 +54,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@color/colorPrimary"
             android:src="@drawable/text_action" />
 
         <ImageButton
@@ -60,6 +62,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@color/colorPrimary"
             android:src="@drawable/card_color_option" />
 
         <ImageButton
@@ -67,6 +70,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@color/colorPrimary"
             android:src="@drawable/text_color_action" />
 
         <ImageButton
@@ -74,6 +78,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@color/colorPrimary"
             android:src="@drawable/filter_action" />
 
     </LinearLayout>
