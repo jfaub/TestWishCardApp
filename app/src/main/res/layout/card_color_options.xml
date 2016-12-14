@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_color_options"
+    android:numColumns="8"
+    android:layout_width="match_parent"
+    android:layout_above="@+id/options"
+    android:layout_marginLeft="24dp"
+    android:layout_marginRight="24dp"
+    android:horizontalSpacing="0dp"
+    android:verticalSpacing="0dp"
+    android:layout_height="80dp">
+</GridView>
