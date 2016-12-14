@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/photo_filter_options"
+    android:layout_width="wrap_content"
+    android:layout_height="40dp"
+    android:layout_above="@+id/options"
+    android:background="@color/colorPrimaryLight"
+    android:horizontalSpacing="0dp"
+    android:numColumns="5"
+    android:paddingLeft="24dp"
+    android:paddingRight="24dp"
+    android:verticalSpacing="0dp"></GridView>

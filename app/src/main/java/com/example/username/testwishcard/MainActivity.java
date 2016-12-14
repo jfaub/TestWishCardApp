@@ -16,11 +16,22 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import jp.wasabeef.picasso.transformations.ColorFilterTransformation;
+import jp.wasabeef.picasso.transformations.GrayscaleTransformation;
+import jp.wasabeef.picasso.transformations.gpu.ContrastFilterTransformation;
+import jp.wasabeef.picasso.transformations.gpu.SepiaFilterTransformation;
+import jp.wasabeef.picasso.transformations.gpu.ToonFilterTransformation;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,11 +46,13 @@ public class MainActivity extends AppCompatActivity {
     private static final String TEXT_ROTATION_PROGRESS_KEY = "TEXT_ROTATION_PROGRESS";
     private static final String CARD_COLOR_KEY = "CARD_COLOR";
     private static final String TEXT_COLOR_KEY = "TEXT_COLOR";
+    private static final String PHOTO_FILTER_KEY = "FILTER";
 
     // Begin by 0 index because "boolean[] optionsEnabled" relies on it (or use a Map?)
     private static final int TEXT_OPTIONS = 0;
     private static final int CARD_COLOR_OPTIONS = 1;
     private static final int TEXT_COLOR_OPTIONS = 2;
+    private static final int PHOTO_FILTER_OPTIONS = 3;
 
     private static final int DEFAULT_TEXT_SIZE = 16;
     private static final int DEFAULT_TEXT_SIZE_PROGRESS = 25;
@@ -55,12 +68,13 @@ public class MainActivity extends AppCompatActivity {
     private ViewGroup mainViewGroup;
 
     private LinearLayout cardView;
+    private ImageView photoView;
     private EditText textView;
-    private SeekBar textRotationSeekBar;
-    private SeekBar textSizeSeekBar;
 
     private int textSizeProgress;
     private int textRotationProgress;
+
+    private HashMap filters;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,11 +88,19 @@ public class MainActivity extends AppCompatActivity {
             optionsEnabled[i] = false;
         }
 
+        filters = new HashMap();
+        filters.put(0, new ColorFilterTransformation(100));
+        filters.put(1, new GrayscaleTransformation());
+        filters.put(2, new ToonFilterTransformation(this));
+        filters.put(3, new SepiaFilterTransformation(this));
+        filters.put(4, new ContrastFilterTransformation(this));
+
         textSizeProgress = DEFAULT_TEXT_SIZE_PROGRESS;
         textRotationProgress = DEFAULT_TEXT_ROTATION_PROGRESS;
 
         mainViewGroup = (ViewGroup) findViewById(R.id.activity_main);
         cardView = (LinearLayout) findViewById(R.id.card);
+        photoView = (ImageView) findViewById(R.id.photo);
         textView = (EditText) findViewById(R.id.text);
 
         ImageButton textOptionsBtn = (ImageButton) findViewById(R.id.option_text_btn);
@@ -113,6 +135,18 @@ public class MainActivity extends AppCompatActivity {
                     enableOption(TEXT_COLOR_OPTIONS);
                 } else {
                     disableOption(TEXT_COLOR_OPTIONS);
+                }
+            }
+        });
+
+        ImageButton filterOptionsBtn = (ImageButton) findViewById(R.id.option_photo_filter_btn);
+        filterOptionsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!optionsEnabled[PHOTO_FILTER_OPTIONS]) {
+                    enableOption(PHOTO_FILTER_OPTIONS);
+                } else {
+                    disableOption(PHOTO_FILTER_OPTIONS);
                 }
             }
         });
@@ -202,16 +236,16 @@ public class MainActivity extends AppCompatActivity {
         Log.d(LOG_TAG, "optionsEnabled[option]: " + optionsEnabled[option]);
         switch (option) {
             case TEXT_OPTIONS:
-                Log.d(LOG_TAG, "enable TEXT_OPTIONS: " + TEXT_OPTIONS);
                 enableTextOptions();
                 break;
             case CARD_COLOR_OPTIONS:
-                Log.d(LOG_TAG, "enable CARD_COLOR_OPTIONS: " + CARD_COLOR_OPTIONS);
                 enableCardColorOptions();
                 break;
             case TEXT_COLOR_OPTIONS:
-                Log.d(LOG_TAG, "enable TEXT_COLOR_OPTIONS: " + TEXT_COLOR_OPTIONS);
                 enableTextColorOptions();
+                break;
+            case PHOTO_FILTER_OPTIONS:
+                enablePhotoFilterOptions();
                 break;
             default:
                 break;
@@ -223,16 +257,16 @@ public class MainActivity extends AppCompatActivity {
         optionsEnabled[option] = false;
         switch (option) {
             case TEXT_OPTIONS:
-                Log.d(LOG_TAG, "disable TEXT_OPTIONS: " + TEXT_OPTIONS);
                 mainViewGroup.removeView(findViewById(R.id.text_options));
                 break;
             case CARD_COLOR_OPTIONS:
-                Log.d(LOG_TAG, "disable CARD_COLOR_OPTIONS: " + CARD_COLOR_OPTIONS);
                 mainViewGroup.removeView(findViewById(R.id.card_color_options));
                 break;
             case TEXT_COLOR_OPTIONS:
-                Log.d(LOG_TAG, "disable TEXT_COLOR_OPTIONS: " + TEXT_COLOR_OPTIONS);
                 mainViewGroup.removeView(findViewById(R.id.text_color_options));
+                break;
+            case PHOTO_FILTER_OPTIONS:
+                mainViewGroup.removeView(findViewById(R.id.photo_filter_options));
                 break;
             default:
                 break;
@@ -254,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(LOG_TAG, "enableTextOptions()");
         mainViewGroup = (ViewGroup) View.inflate(this, R.layout.text_options, mainViewGroup);
 
-        textSizeSeekBar = (SeekBar) findViewById(R.id.text_size_seekbar);
+        SeekBar textSizeSeekBar = (SeekBar) findViewById(R.id.text_size_seekbar);
         textSizeSeekBar.setProgress(textSizeProgress);
         textSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -275,7 +309,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        textRotationSeekBar = (SeekBar) findViewById(R.id.text_rotation_seekbar);
+        SeekBar textRotationSeekBar = (SeekBar) findViewById(R.id.text_rotation_seekbar);
         textRotationSeekBar.setProgress(textRotationProgress);
         textRotationSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -325,7 +359,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        gridView.setAdapter(new ArrayAdapter<Integer>(this, R.layout.card_color_grid_elem, colorGrid) {
+        gridView.setAdapter(new ArrayAdapter<Integer>(this,
+                R.layout.card_color_grid_elem, colorGrid) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
@@ -361,7 +396,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         gridView.setAdapter(new ArrayAdapter<Integer>(this,
-                R.layout.text_color_grid_elem,colorGrid) {
+                R.layout.text_color_grid_elem, colorGrid) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
@@ -371,5 +406,68 @@ public class MainActivity extends AppCompatActivity {
                 return view;
             }
         });
+    }
+
+    private void enablePhotoFilterOptions() {
+        Log.d(LOG_TAG, "enablePhotoFilterOptions()");
+        mainViewGroup = (ViewGroup) View.inflate(this,
+                R.layout.photo_filter_options, mainViewGroup);
+
+        final ArrayList<String> filterGrid = new ArrayList<>();
+        filterGrid.add("F1");
+        filterGrid.add("F2");
+        filterGrid.add("F3");
+        filterGrid.add("F4");
+        filterGrid.add("F5");
+
+        final GridView gridView = (GridView) findViewById(R.id.photo_filter_options);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                photoView.setScaleType(ImageView.ScaleType.CENTER);
+                switch (i) {
+                    case 0:
+                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                                .transform((ColorFilterTransformation) filters.get(i))
+                                .placeholder(R.drawable.progress_animation)
+                                .into(photoView, new Callback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        photoView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                                    }
+
+                                    @Override
+                                    public void onError() {
+                                        Log.d(LOG_TAG, "load error in picasso");
+                                    }
+                                });
+                        break;
+                    case 1:
+                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                                .transform(new GrayscaleTransformation())
+                                .into((ImageView) findViewById(R.id.photo));
+                        break;
+                    case 2:
+                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                                .transform(new ToonFilterTransformation(getApplicationContext()))
+                                .into((ImageView) findViewById(R.id.photo));
+                        break;
+                    case 3:
+                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                                .transform(new SepiaFilterTransformation(getApplicationContext()))
+                                .into((ImageView) findViewById(R.id.photo));
+                        break;
+                    case 4:
+                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                                .transform(new ContrastFilterTransformation(getApplicationContext()))
+                                .into((ImageView) findViewById(R.id.photo));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+
+        gridView.setAdapter(new ArrayAdapter<>(this, R.layout.photo_filter_grid_elem, filterGrid));
     }
 }
