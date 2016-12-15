@@ -2,11 +2,10 @@
 <GridView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/text_color_options"
     android:layout_width="match_parent"
-    android:layout_height="40dp"
+    android:layout_height="@dimen/options_detail_one_level_height"
     android:layout_above="@+id/options"
     android:background="@color/colorPrimaryLight"
     android:horizontalSpacing="0dp"
-    android:numColumns="8"
-    android:paddingLeft="24dp"
-    android:paddingRight="24dp"
-    android:verticalSpacing="0dp"></GridView>
+    android:paddingLeft="@dimen/options_padding_left"
+    android:paddingRight="@dimen/options_padding_right"
+    android:verticalSpacing="0dp" />

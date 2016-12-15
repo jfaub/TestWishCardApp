@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">TestWishCard</string>
+    <string name="text_hint">Write here if you want to</string>
 </resources>

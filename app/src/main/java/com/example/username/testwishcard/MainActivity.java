@@ -23,22 +23,29 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Transformation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import jp.wasabeef.picasso.transformations.ColorFilterTransformation;
 import jp.wasabeef.picasso.transformations.GrayscaleTransformation;
-import jp.wasabeef.picasso.transformations.gpu.ContrastFilterTransformation;
 import jp.wasabeef.picasso.transformations.gpu.SepiaFilterTransformation;
 import jp.wasabeef.picasso.transformations.gpu.ToonFilterTransformation;
+import jp.wasabeef.picasso.transformations.gpu.VignetteFilterTransformation;
 
+/**
+ * This app let us customize a wish card.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private final String LOG_TAG = this.getClass().getSimpleName();
 
     private static final int NUMBER_OF_OPTIONS = 5;
 
+    // Keys needed to save the state of our wish card
     private static final String TEXT_MSG_KEY = "TEXT_MSG";
     private static final String TEXT_SIZE_KEY = "TEXT_SIZE";
     private static final String TEXT_SIZE_PROGRESS_KEY = "TEXT_SIZE_PROGRESS";
@@ -48,18 +55,20 @@ public class MainActivity extends AppCompatActivity {
     private static final String TEXT_COLOR_KEY = "TEXT_COLOR";
     private static final String PHOTO_FILTER_KEY = "FILTER";
 
+    // Option flags to know which option is active
     // Begin by 0 index because "boolean[] optionsEnabled" relies on it (or use a Map?)
     private static final int TEXT_OPTIONS = 0;
     private static final int CARD_COLOR_OPTIONS = 1;
     private static final int TEXT_COLOR_OPTIONS = 2;
     private static final int PHOTO_FILTER_OPTIONS = 3;
 
+    // Default values when no modification has been made on the wish card
     private static final int DEFAULT_TEXT_SIZE = 16;
     private static final int DEFAULT_TEXT_SIZE_PROGRESS = 25;
     private static final float TEXT_SIZE_PROGRESS_STEP = 5.0f;
-
     private static final int DEFAULT_TEXT_ROTATION = 0;
     private static final int DEFAULT_TEXT_ROTATION_PROGRESS = 0;
+    private static final String DEFAULT_PHOTO_FILTER = "F1";
 
     SharedPreferences sharedPref;
 
@@ -73,8 +82,9 @@ public class MainActivity extends AppCompatActivity {
 
     private int textSizeProgress;
     private int textRotationProgress;
+    private String photoFilter;
 
-    private HashMap filters;
+    private HashMap<String, Transformation> filters;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,20 +93,23 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
 
+        // For tracking which option is active
         optionsEnabled = new boolean[NUMBER_OF_OPTIONS];
         for (int i = 0; i < optionsEnabled.length; i++) {
             optionsEnabled[i] = false;
         }
 
-        filters = new HashMap();
-        filters.put(0, new ColorFilterTransformation(100));
-        filters.put(1, new GrayscaleTransformation());
-        filters.put(2, new ToonFilterTransformation(this));
-        filters.put(3, new SepiaFilterTransformation(this));
-        filters.put(4, new ContrastFilterTransformation(this));
+        // Define some types of filters
+        filters = new HashMap<>();
+        filters.put(DEFAULT_PHOTO_FILTER, new ColorFilterTransformation(0));
+        filters.put("F2", new GrayscaleTransformation());
+        filters.put("F3", new ToonFilterTransformation(this));
+        filters.put("F4", new SepiaFilterTransformation(this));
+        filters.put("F5", new VignetteFilterTransformation(this));
 
         textSizeProgress = DEFAULT_TEXT_SIZE_PROGRESS;
         textRotationProgress = DEFAULT_TEXT_ROTATION_PROGRESS;
+        photoFilter = DEFAULT_PHOTO_FILTER;
 
         mainViewGroup = (ViewGroup) findViewById(R.id.activity_main);
         cardView = (LinearLayout) findViewById(R.id.card);
@@ -154,9 +167,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        Log.d(LOG_TAG, "onResume()");
         super.onResume();
 
+        // Restore the state of the wish card
         String textMsg = sharedPref.getString(TEXT_MSG_KEY, "");
         textView.setText(textMsg);
         float textSize = sharedPref.getFloat(TEXT_SIZE_KEY, DEFAULT_TEXT_SIZE);
@@ -172,6 +185,22 @@ public class MainActivity extends AppCompatActivity {
         int textColor = sharedPref.getInt(TEXT_COLOR_KEY,
                 ContextCompat.getColor(this, android.R.color.black));
         textView.setTextColor(textColor);
+        photoFilter = sharedPref.getString(PHOTO_FILTER_KEY, DEFAULT_PHOTO_FILTER);
+        photoView.setScaleType(ImageView.ScaleType.CENTER);
+        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                .transform(filters.get((photoFilter)))
+                .placeholder(R.drawable.progress_animation)
+                .into(photoView, new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        photoView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    }
+
+                    @Override
+                    public void onError() {
+                        Log.d(LOG_TAG, "Error while loading image with picasso");
+                    }
+                });
 
         Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize());
         Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
@@ -179,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        Log.d(LOG_TAG, "onPause()");
         super.onPause();
 
         disableAllOptions();
@@ -193,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize() / 2);
         Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
 
+        // Save the state of the wish card
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(TEXT_MSG_KEY, textView.getText().toString());
         editor.putFloat(TEXT_SIZE_KEY, textView.getTextSize() / 2);
@@ -201,29 +230,16 @@ public class MainActivity extends AppCompatActivity {
         editor.putInt(TEXT_ROTATION_PROGRESS_KEY, textRotationProgress);
         editor.putInt(CARD_COLOR_KEY, cardColor);
         editor.putInt(TEXT_COLOR_KEY, textColor);
+        editor.putString(PHOTO_FILTER_KEY, photoFilter);
         editor.commit();
     }
-//
-//    @Override
-//    protected void onSaveInstanceState(Bundle outState) {
-//        Log.d(LOG_TAG, "onSaveInstanceState()");
-//        super.onSaveInstanceState(outState);
-//        int color = Color.TRANSPARENT;
-//        Drawable background = cardView.getBackground();
-//        if (background instanceof ColorDrawable)
-//            color = ((ColorDrawable) background).getColor();
-//        outState.putInt(CARD_COLOR_KEY, color);
-//    }
-//
-//    @Override
-//    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-//        Log.d(LOG_TAG, "onRestoreInstanceState()");
-//        super.onRestoreInstanceState(savedInstanceState);
-//        int color = savedInstanceState.getInt(CARD_COLOR_KEY,
-//                ContextCompat.getColor(this, android.R.color.white));
-//        cardView.setBackgroundColor(color);
-//    }
 
+
+    /**
+     * Activate an option an show corresponding the sub-options
+     *
+     * @param option: flag for the option to activate
+     */
     private void enableOption(int option) {
         // Disable all options that are enabled
         for (int i = 0; i < optionsEnabled.length; i++) {
@@ -351,6 +367,7 @@ public class MainActivity extends AppCompatActivity {
         colorGrid.add(R.color.c16);
 
         final GridView gridView = (GridView) findViewById(R.id.card_color_options);
+        gridView.setNumColumns(((int) (colorGrid.size() - colorGrid.size() / 2)));
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -387,6 +404,7 @@ public class MainActivity extends AppCompatActivity {
         colorGrid.add(R.color.c8);
 
         final GridView gridView = (GridView) findViewById(R.id.text_color_options);
+        gridView.setNumColumns(colorGrid.size());
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -413,58 +431,31 @@ public class MainActivity extends AppCompatActivity {
         mainViewGroup = (ViewGroup) View.inflate(this,
                 R.layout.photo_filter_options, mainViewGroup);
 
-        final ArrayList<String> filterGrid = new ArrayList<>();
-        filterGrid.add("F1");
-        filterGrid.add("F2");
-        filterGrid.add("F3");
-        filterGrid.add("F4");
-        filterGrid.add("F5");
+        final List<String> filterGrid = new ArrayList<>(filters.keySet());
+        Collections.sort(filterGrid);
 
         final GridView gridView = (GridView) findViewById(R.id.photo_filter_options);
+        gridView.setNumColumns(filterGrid.size());
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 photoView.setScaleType(ImageView.ScaleType.CENTER);
-                switch (i) {
-                    case 0:
+                String photoFilterName = ((TextView) view).getText().toString();
+                photoFilter = photoFilterName;
                         Picasso.with(getApplicationContext()).load(R.drawable.cascade)
-                                .transform((ColorFilterTransformation) filters.get(i))
-                                .placeholder(R.drawable.progress_animation)
-                                .into(photoView, new Callback() {
-                                    @Override
-                                    public void onSuccess() {
-                                        photoView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                                    }
+                        .transform(filters.get((photoFilterName)))
+                        .placeholder(R.drawable.progress_animation)
+                        .into(photoView, new Callback() {
+                            @Override
+                            public void onSuccess() {
+                                photoView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                            }
 
-                                    @Override
-                                    public void onError() {
-                                        Log.d(LOG_TAG, "load error in picasso");
-                                    }
-                                });
-                        break;
-                    case 1:
-                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
-                                .transform(new GrayscaleTransformation())
-                                .into((ImageView) findViewById(R.id.photo));
-                        break;
-                    case 2:
-                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
-                                .transform(new ToonFilterTransformation(getApplicationContext()))
-                                .into((ImageView) findViewById(R.id.photo));
-                        break;
-                    case 3:
-                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
-                                .transform(new SepiaFilterTransformation(getApplicationContext()))
-                                .into((ImageView) findViewById(R.id.photo));
-                        break;
-                    case 4:
-                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
-                                .transform(new ContrastFilterTransformation(getApplicationContext()))
-                                .into((ImageView) findViewById(R.id.photo));
-                        break;
-                    default:
-                        break;
-                }
+                            @Override
+                            public void onError() {
+                                Log.d(LOG_TAG, "Error while loading image with picasso");
+                            }
+                        });
             }
         });
 
