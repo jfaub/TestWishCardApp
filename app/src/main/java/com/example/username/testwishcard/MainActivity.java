@@ -62,6 +62,13 @@ public class MainActivity extends AppCompatActivity {
     private static final int TEXT_COLOR_OPTIONS = 2;
     private static final int PHOTO_FILTER_OPTIONS = 3;
 
+    // Filter names
+    private static final String PHOTO_FILTER_2 = "F2";
+    private static final String PHOTO_FILTER_3 = "F3";
+    private static final String PHOTO_FILTER_4 = "F4";
+    private static final String PHOTO_FILTER_5 = "F5";
+
+
     // Default values when no modification has been made on the wish card
     private static final int DEFAULT_TEXT_SIZE = 16;
     private static final int DEFAULT_TEXT_SIZE_PROGRESS = 25;
@@ -102,10 +109,10 @@ public class MainActivity extends AppCompatActivity {
         // Define some types of filters
         filters = new HashMap<>();
         filters.put(DEFAULT_PHOTO_FILTER, new ColorFilterTransformation(0));
-        filters.put("F2", new GrayscaleTransformation());
-        filters.put("F3", new ToonFilterTransformation(this));
-        filters.put("F4", new SepiaFilterTransformation(this));
-        filters.put("F5", new VignetteFilterTransformation(this));
+        filters.put(PHOTO_FILTER_2, new GrayscaleTransformation());
+        filters.put(PHOTO_FILTER_3, new ToonFilterTransformation(this));
+        filters.put(PHOTO_FILTER_4, new SepiaFilterTransformation(this));
+        filters.put(PHOTO_FILTER_5, new VignetteFilterTransformation(this));
 
         textSizeProgress = DEFAULT_TEXT_SIZE_PROGRESS;
         textRotationProgress = DEFAULT_TEXT_ROTATION_PROGRESS;
@@ -172,19 +179,25 @@ public class MainActivity extends AppCompatActivity {
         // Restore the state of the wish card
         String textMsg = sharedPref.getString(TEXT_MSG_KEY, "");
         textView.setText(textMsg);
+
         float textSize = sharedPref.getFloat(TEXT_SIZE_KEY, DEFAULT_TEXT_SIZE);
         textView.setTextSize(textSize);
+
         float textRotation = sharedPref.getFloat(TEXT_ROTATION_KEY, DEFAULT_TEXT_ROTATION);
         textView.setRotation(textRotation);
+
         textSizeProgress = sharedPref.getInt(TEXT_SIZE_PROGRESS_KEY, DEFAULT_TEXT_SIZE_PROGRESS);
         textRotationProgress = sharedPref.getInt(TEXT_ROTATION_PROGRESS_KEY,
                 DEFAULT_TEXT_ROTATION_PROGRESS);
+
         int cardColor = sharedPref.getInt(CARD_COLOR_KEY,
                 ContextCompat.getColor(this, android.R.color.white));
         cardView.setBackgroundColor(cardColor);
+
         int textColor = sharedPref.getInt(TEXT_COLOR_KEY,
                 ContextCompat.getColor(this, android.R.color.black));
         textView.setTextColor(textColor);
+
         photoFilter = sharedPref.getString(PHOTO_FILTER_KEY, DEFAULT_PHOTO_FILTER);
         photoView.setScaleType(ImageView.ScaleType.CENTER);
         Picasso.with(getApplicationContext()).load(R.drawable.cascade)
@@ -201,9 +214,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(LOG_TAG, "Error while loading image with picasso");
                     }
                 });
-
-        Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize());
-        Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
     }
 
     @Override
@@ -218,38 +228,42 @@ public class MainActivity extends AppCompatActivity {
 
         int textColor = textView.getTextColors().getDefaultColor();
 
-        Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize() / 2);
+        Log.d(LOG_TAG, "textView.getTextSize(): " + textView.getTextSize());
         Log.d(LOG_TAG, "textSizeProgress: " + textSizeProgress);
 
         // Save the state of the wish card
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(TEXT_MSG_KEY, textView.getText().toString());
-        editor.putFloat(TEXT_SIZE_KEY, textView.getTextSize() / 2);
+        editor.putFloat(TEXT_SIZE_KEY, pixelsToSp(this, textView.getTextSize()));
         editor.putInt(TEXT_SIZE_PROGRESS_KEY, textSizeProgress);
         editor.putFloat(TEXT_ROTATION_KEY, textView.getRotation());
         editor.putInt(TEXT_ROTATION_PROGRESS_KEY, textRotationProgress);
         editor.putInt(CARD_COLOR_KEY, cardColor);
         editor.putInt(TEXT_COLOR_KEY, textColor);
         editor.putString(PHOTO_FILTER_KEY, photoFilter);
-        editor.commit();
+        editor.apply();
     }
 
+    /**
+     * Convert size in pixels to a size in sp
+     *
+     * @param context: current context
+     * @param px: size in pixels
+     * @return
+     */
+    public static float pixelsToSp(Context context, float px) {
+        float scaledDensity = context.getResources().getDisplayMetrics().scaledDensity;
+        return px/scaledDensity;
+    }
 
     /**
-     * Activate an option an show corresponding the sub-options
+     * Activate an option an show the corresponding sub-options
      *
      * @param option: flag for the option to activate
      */
     private void enableOption(int option) {
-        // Disable all options that are enabled
-        for (int i = 0; i < optionsEnabled.length; i++) {
-            if (optionsEnabled[i]) {
-                disableOption(i);
-            }
-        }
+        disableAllOptions();
         optionsEnabled[option] = true;
-        Log.d(LOG_TAG, "option: " + option);
-        Log.d(LOG_TAG, "optionsEnabled[option]: " + optionsEnabled[option]);
         switch (option) {
             case TEXT_OPTIONS:
                 enableTextOptions();
@@ -268,21 +282,25 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Deactivate an option an hide the corresponding sub-options
+     *
+     * @param option: flag for the option to activate
+     */
     private void disableOption(int option) {
-        Log.d(LOG_TAG, "disableOption(): " + option);
         optionsEnabled[option] = false;
         switch (option) {
             case TEXT_OPTIONS:
-                mainViewGroup.removeView(findViewById(R.id.text_options));
+                findViewById(R.id.text_options).setVisibility(View.GONE);
                 break;
             case CARD_COLOR_OPTIONS:
-                mainViewGroup.removeView(findViewById(R.id.card_color_options));
+                findViewById(R.id.card_color_options).setVisibility(View.GONE);
                 break;
             case TEXT_COLOR_OPTIONS:
-                mainViewGroup.removeView(findViewById(R.id.text_color_options));
+                findViewById(R.id.text_color_options).setVisibility(View.GONE);
                 break;
             case PHOTO_FILTER_OPTIONS:
-                mainViewGroup.removeView(findViewById(R.id.photo_filter_options));
+                findViewById(R.id.photo_filter_options).setVisibility(View.GONE);
                 break;
             default:
                 break;
@@ -290,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Disable all options that are enabled
+     * Deactivate all options that are enabled
      */
     private void disableAllOptions() {
         for (int i = 0; i < optionsEnabled.length; i++) {
@@ -300,9 +318,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Activate the option for text size and text rotation
+     */
     private void enableTextOptions() {
-        Log.d(LOG_TAG, "enableTextOptions()");
-        mainViewGroup = (ViewGroup) View.inflate(this, R.layout.text_options, mainViewGroup);
+        findViewById(R.id.text_options).setVisibility(View.VISIBLE);
 
         SeekBar textSizeSeekBar = (SeekBar) findViewById(R.id.text_size_seekbar);
         textSizeSeekBar.setProgress(textSizeProgress);
@@ -310,8 +330,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 textSizeProgress = i;
-                Log.d(LOG_TAG, "TextSize ***: " + (DEFAULT_TEXT_SIZE
-                        + (i - DEFAULT_TEXT_SIZE_PROGRESS) / TEXT_SIZE_PROGRESS_STEP));
                 textView.setTextSize(DEFAULT_TEXT_SIZE
                         + (i - DEFAULT_TEXT_SIZE_PROGRESS) / TEXT_SIZE_PROGRESS_STEP);
             }
@@ -344,92 +362,81 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Activate the option for card color
+     */
     private void enableCardColorOptions() {
-        Log.d(LOG_TAG, "enableCardColorOptions()");
-        mainViewGroup = (ViewGroup) View.inflate(this, R.layout.card_color_options, mainViewGroup);
+        findViewById(R.id.card_color_options).setVisibility(View.VISIBLE);
 
-        final ArrayList<Integer> colorGrid = new ArrayList<>();
-        colorGrid.add(R.color.c1);
-        colorGrid.add(R.color.c2);
-        colorGrid.add(R.color.c3);
-        colorGrid.add(R.color.c4);
-        colorGrid.add(R.color.c5);
-        colorGrid.add(R.color.c6);
-        colorGrid.add(R.color.c7);
-        colorGrid.add(R.color.c8);
-        colorGrid.add(R.color.c9);
-        colorGrid.add(R.color.c10);
-        colorGrid.add(R.color.c11);
-        colorGrid.add(R.color.c12);
-        colorGrid.add(R.color.c13);
-        colorGrid.add(R.color.c14);
-        colorGrid.add(R.color.c15);
-        colorGrid.add(R.color.c16);
+        final Integer[] colors = new Integer[]{
+                R.color.c1, R.color.c2, R.color.c3, R.color.c4,
+                R.color.c5, R.color.c6, R.color.c7, R.color.c8,
+                R.color.c9, R.color.c10, R.color.c11, R.color.c12,
+                R.color.c13, R.color.c14, R.color.c15, R.color.c16
+        };
 
         final GridView gridView = (GridView) findViewById(R.id.card_color_options);
-        gridView.setNumColumns(((int) (colorGrid.size() - colorGrid.size() / 2)));
+        gridView.setNumColumns((colors.length - colors.length / 2));
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 cardView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(),
-                        colorGrid.get(i)));
+                        colors[i]));
             }
         });
 
         gridView.setAdapter(new ArrayAdapter<Integer>(this,
-                R.layout.card_color_grid_elem, colorGrid) {
+                R.layout.card_color_grid_elem, colors) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
                 ((TextView) view).setText("");
                 view.setBackgroundColor(ContextCompat.getColor(getContext(),
-                        colorGrid.get(position)));
+                        colors[position]));
                 return view;
             }
         });
     }
 
+    /**
+     * Activate the option for text color
+     */
     private void enableTextColorOptions() {
-        Log.d(LOG_TAG, "enableTextColorOptions()");
-        mainViewGroup = (ViewGroup) View.inflate(this, R.layout.text_color_options, mainViewGroup);
+        findViewById(R.id.text_color_options).setVisibility(View.VISIBLE);
 
-        final ArrayList<Integer> colorGrid = new ArrayList<>();
-        colorGrid.add(R.color.c1);
-        colorGrid.add(android.R.color.black);
-        colorGrid.add(R.color.c3);
-        colorGrid.add(R.color.c4);
-        colorGrid.add(android.R.color.white);
-        colorGrid.add(R.color.c6);
-        colorGrid.add(R.color.c7);
-        colorGrid.add(R.color.c8);
+        final Integer[] colors = new Integer[]{
+                R.color.c1, android.R.color.black, R.color.c3, R.color.c4,
+                android.R.color.white, R.color.c6, R.color.c7, R.color.c8
+        };
 
         final GridView gridView = (GridView) findViewById(R.id.text_color_options);
-        gridView.setNumColumns(colorGrid.size());
+        gridView.setNumColumns(colors.length);
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 textView.setTextColor(ContextCompat.getColor(getApplicationContext(),
-                        colorGrid.get(i)));
+                        colors[i]));
             }
         });
 
         gridView.setAdapter(new ArrayAdapter<Integer>(this,
-                R.layout.text_color_grid_elem, colorGrid) {
+                R.layout.text_color_grid_elem, colors) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
                 ((TextView) view).setText("");
                 view.setBackgroundColor(ContextCompat.getColor(getContext(),
-                        colorGrid.get(position)));
+                        colors[position]));
                 return view;
             }
         });
     }
 
+    /**
+     * Activate the option for applying a filter on the photo
+     */
     private void enablePhotoFilterOptions() {
-        Log.d(LOG_TAG, "enablePhotoFilterOptions()");
-        mainViewGroup = (ViewGroup) View.inflate(this,
-                R.layout.photo_filter_options, mainViewGroup);
+        findViewById(R.id.photo_filter_options).setVisibility(View.VISIBLE);
 
         final List<String> filterGrid = new ArrayList<>(filters.keySet());
         Collections.sort(filterGrid);
@@ -442,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
                 photoView.setScaleType(ImageView.ScaleType.CENTER);
                 String photoFilterName = ((TextView) view).getText().toString();
                 photoFilter = photoFilterName;
-                        Picasso.with(getApplicationContext()).load(R.drawable.cascade)
+                Picasso.with(getApplicationContext()).load(R.drawable.cascade)
                         .transform(filters.get((photoFilterName)))
                         .placeholder(R.drawable.progress_animation)
                         .into(photoView, new Callback() {

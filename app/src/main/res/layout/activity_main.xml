@@ -82,4 +82,20 @@
             android:background="@color/colorPrimary"
             android:src="@drawable/filter_action" />
     </LinearLayout>
+
+    <include
+        layout="@layout/text_options"
+        android:visibility="gone" />
+
+    <include
+        layout="@layout/card_color_options"
+        android:visibility="gone" />
+
+    <include
+        layout="@layout/text_color_options"
+        android:visibility="gone" />
+
+    <include
+        layout="@layout/photo_filter_options"
+        android:visibility="gone" />
 </RelativeLayout>
